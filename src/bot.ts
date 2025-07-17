@@ -48,10 +48,24 @@ class WhatsAppBot {
 
             if(message.isGroupMsg){
                 this.handleGroupMessage(message)
-            }else {
-                this.handleMessage(message)
             }
         });
+
+        this.client.onMessage((message: Message)  => {
+            if(processedMessages.has(message.id)){
+                console.log("[INFO] Duplicata identificada, ignorando...")
+                return;
+            }
+
+            processedMessages.add(message.id);
+            setTimeout(() => {
+                processedMessages.delete(message.id)
+            }, 5000);
+
+            if(!message.isGroupMsg){
+                this.handleMessage(message)
+            }
+        })
 
         this.client.onStateChange((state) => {
             console.log("[INFO] [STATE] Estado da sessão alterado: ", state);
