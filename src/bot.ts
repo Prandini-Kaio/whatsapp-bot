@@ -46,7 +46,11 @@ class WhatsAppBot {
                 processedMessages.delete(message.id)
             }, 5000);
 
-            this.handleMessage(message);
+            if(message.isGroupMsg){
+                this.handleGroupMessage(message)
+            }else {
+                this.handleMessage(message)
+            }
         });
 
         this.client.onStateChange((state) => {
@@ -56,11 +60,11 @@ class WhatsAppBot {
 
     private async handleMessage(message: Message) {
         // Ignora mensagens privadas
-        if(message.fromMe || message.chatId === 'status@broadcast' || !message.isGroupMsg || message.chatId !== this.GROUP_ID){
+        if(message.fromMe || message.chatId === 'status@broadcast'){
             return;
         }
 
-        console.log("[INFO] Mensagem recebida: ", message.body)
+        console.log("[INFO] [PRIVATE] Mensagem recebida: ", message.body)
 
         try {
             const payload = {
@@ -69,26 +73,50 @@ class WhatsAppBot {
                 timestamp: message.timestamp
             };
 
-            console.log("[INFO] Enviando mensagem para a API...")
+            console.log("[INFO] [PRIVATE] Enviando mensagem para a API...")
             let apiResponse;
 
-            if(payload.texto.toLocaleLowerCase().includes("resumo")){
-                apiResponse = await axios.post(this.API_ENDPOINT+"/resumo", payload);
-            }else {
-                apiResponse = await axios.post(this.API_ENDPOINT+"/financeiro", payload);
-            }
+            apiResponse = await axios.post(this.API_ENDPOINT+"/financeiro/outros", payload);
 
             if(apiResponse.data && apiResponse.data.reply){
                 this.sendMessage(this.GROUP_ID, apiResponse.data.reply);
             }
         }catch(error) {
-            console.error('[ERROR] Erro ao processar a mensagem ou contatar a API:', error);
+            console.error('[ERROR] [PRIVATE] Erro ao processar a mensagem ou contatar a API:', error);
+            this.sendMessage(this.GROUP_ID, 'Desculpe, não consegui processar sua solicitação no momento. Tente novamente mais tarde.');
+        }
+    }
+
+    private async handleGroupMessage(message: Message) {
+        if(message.fromMe || message.chatId === 'status@broadcast' || !message.isGroupMsg || message.chatId !== this.GROUP_ID){
+            return;
+        }
+
+        console.log("[INFO] [GROUP] Mensagem recebida: ", message.body)
+
+        try {
+            const payload = {
+                sender: message.from,
+                texto: message.body,
+                timestamp: message.timestamp
+            };
+
+            console.log("[INFO] [GROUP] Enviando mensagem para a API...")
+            let apiResponse;
+
+            apiResponse = await axios.post(this.API_ENDPOINT+"/financeiro", payload);
+
+            if(apiResponse.data && apiResponse.data.reply){
+                this.sendMessage(message.from, apiResponse.data.reply);
+            }
+        }catch(error) {
+            console.error('[ERROR] [GROUP] Erro ao processar a mensagem ou contatar a API:', error);
             this.sendMessage(this.GROUP_ID, 'Desculpe, não consegui processar sua solicitação no momento. Tente novamente mais tarde.');
         }
     }
 
     private async sendMessage(to: string, message: string) {
-        console.log("[INFO] Enviando resposta para o client.");
+        console.log("[INFO] Enviando resposta para " + to);
         await this.client?.sendText(to, message);
     }
 }
