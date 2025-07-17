@@ -36,7 +36,7 @@ class WhatsAppBot {
         console.log("[INFO] Cliente Venom iniciado com sucesso!");
 
         this.client.onAnyMessage((message: Message) => {
-            if(processedMessages.has(message.id)){
+            if(processedMessages.has(message.id) || !message.isGroupMsg){
                 console.log("[INFO] Duplicata identificada, ignorando...")
                 return;
             }
@@ -52,7 +52,7 @@ class WhatsAppBot {
         });
 
         this.client.onMessage((message: Message)  => {
-            if(processedMessages.has(message.id)){
+            if(processedMessages.has(message.id) || message.isGroupMsg){
                 console.log("[INFO] Duplicata identificada, ignorando...")
                 return;
             }
@@ -97,7 +97,7 @@ class WhatsAppBot {
             }
         }catch(error) {
             console.error('[ERROR] [PRIVATE] Erro ao processar a mensagem ou contatar a API:', error);
-            this.sendMessage(this.GROUP_ID, 'Desculpe, não consegui processar sua solicitação no momento. Tente novamente mais tarde.');
+            this.sendMessage(message.from, 'Desculpe, não consegui processar sua solicitação no momento. Tente novamente mais tarde.');
         }
     }
 
